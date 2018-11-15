@@ -8,4 +8,4 @@ I welcome improvments to this code, please submit as pull requests or if you can
 
 
 ## Sample usage
-$LTLOCATIONID = 1 ; (new-object Net.WebClient).DownloadString('/Check-LTAgent/Check-LTAgent.ps1') | iex ;
+$LTLOCATIONID = 1 ; (new-object Net.WebClient).DownloadString('https://raw.githubusercontent.com/AlexHeylin/Check-LTAgent/master/Check-LTAgent.ps1') | iex ;
