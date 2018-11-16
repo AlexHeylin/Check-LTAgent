@@ -21,5 +21,5 @@ $LTSrv = "labtech.mymspname.here" ; $LTLoc = 1 ;  (new-object Net.WebClient).Dow
 
 or in short form (if the Bitly stays live)
 ```powershell
-$LTSrv = "labtech.mymspname.here" ; $LTLoc = 1 ; (new-object Net.WebClient).DownloadString('https://bit.ly/2qO49e8') | iex ;
+$LTSrv="labtech.mymspname.here";$LTLoc=1;(new-object Net.WebClient).DownloadString('https://bit.ly/2qO49e8')|iex;
 ```
