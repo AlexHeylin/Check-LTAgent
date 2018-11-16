@@ -78,7 +78,7 @@ Function Reinstall {
 
 ## Main Flow
 If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) { 
-	outlog "You need to specify the LT server to use - either in the script param block, or on the command line" ;	
+	outlog "You need to specify the LT server to use by setting `$LTSrv variable before calling this script" ;	
 } else {
 
     outlog "Checking health of LabTech agent" ;
