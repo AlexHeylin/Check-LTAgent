@@ -4,7 +4,7 @@
 ## Requires (and dynamically imports) the Labtech-Powershell-Module
 ## https://github.com/LabtechConsulting/LabTech-Powershell-Module
 ## Many thanks to http://labtechconsulting.com for their excellent work
-## License on my code: MIT license - please leave header intact and consider submitting improvemnts to this project
+## License on my code: MIT license - please leave header intact and consider submitting improvements to this project
 ## via the public repo: https://github.com/AlexHeylin/Check-LTAgent
 ## Supplied with no warranty etc. If your cat dies - don't blame me. 
 ## Change log: 2018-11-07 Initial version.
@@ -13,7 +13,7 @@
 ## 2018-11-15 First public release on Github - Enjoy!  (I know it's messy, but seems to work.)
 
 
-## If you want to set default / overide values, do that here
+## If you want to set default / override values, do that here
 # $LTSrv = "labtech.mymspname.here"
 # $LogFile = $null
 
@@ -62,9 +62,9 @@ Function Reinstall {
   ## Dynamically load the latest LT PoSh module
 	outlog "Dynamically loading LT-PoSh module from Github"
 	(new-object Net.WebClient).DownloadString('http://bit.ly/LTPoSh') | iex ; 
-	outlog "Calling Reinstall-LTService -Server $LTSrv -LocationID $LTLOCATIONID"
+	outlog "Calling Reinstall-LTService -Server $LTSrv -LocationID $LTLoc"
 	## Call the module to do the (re)install
-	Reinstall-LTService -Server $LTSrv -LocationID $LTLOCATIONID
+	Reinstall-LTService -Server $LTSrv -LocationID $LTLoc
 
 	## Check TerminalServerMode using WMI.  1 = Application Server mode (Terminal Server), 0 = Remote Administration mode (normal RDP)
 	if ( (Get-WmiObject -Namespace "root\CIMV2\TerminalServices" -Class "Win32_TerminalServiceSetting" ).TerminalServerMode -eq 1) {
