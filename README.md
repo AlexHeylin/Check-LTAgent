@@ -10,9 +10,9 @@ I welcome improvments to this code, please submit as pull requests or if you can
 ## Variables (yes, they're not parameters - this seemed easier)
 This code accepts you setting some variables before execution
 ```powershell
-$LTSrv = "labtech.mymspname.here" # FQDN of your LabTech server (required - unless you modify script header)
+$LTSrv = 'labtech.mymspname.here' # FQDN of your LabTech server (required - unless you modify script header)
 $LTLoc = 1 # LabTech Location ID to add agent to (optional - defaults to 1)
-$LogFile = "$Env:temp\Check-LTAgent-log.txt" # If you want a logfile, where do you want the file. (optional)
+$LogFile = '$Env:temp\Check-LTAgent-log.txt' # If you want a logfile, where do you want the file. (optional)
 ```
 
 ## Sample usage
