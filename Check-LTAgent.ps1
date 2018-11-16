@@ -64,7 +64,8 @@ Function Reinstall {
 	(new-object Net.WebClient).DownloadString('http://bit.ly/LTPoSh') | iex ; 
 	outlog "Calling Reinstall-LTService -Server $LTSrv -LocationID $LTLoc"
 	## Call the module to do the (re)install
-	Reinstall-LTService -Server $LTSrv -LocationID $LTLoc
+	#Reinstall-LTService -Server $LTSrv -LocationID $LTLoc
+	Reinstall-LTService -Server $LTSrv -LocationID $LTLoc >> $LogFile
 
 	## Check TerminalServerMode using WMI.  1 = Application Server mode (Terminal Server), 0 = Remote Administration mode (normal RDP)
 	if ( (Get-WmiObject -Namespace "root\CIMV2\TerminalServices" -Class "Win32_TerminalServiceSetting" ).TerminalServerMode -eq 1) {
