@@ -11,13 +11,13 @@
 ## 2018-11-14 Tidy up comments and code. Improve flow control logic.
 ## 2018-11-15 Rework so we can invoke this directly from scheduled task via HTTPS.
 ## 2018-11-15 First public release on Github - Enjoy!  (I know it's messy, but seems to work.)
+## 2018-12-06 Rework the services section to be more forgiving and retry changes to avoid unnecessary reinstalls.
 
 
 ## If you want to set default / override values, do that here
 # $LTSrv = "labtech.mymspname.here"
 # $LogFile = $null
-
-# Default to location ID 1 (default in LT)
+## Default to location ID 1 (default in LT)
 If ($LTLoc -eq $null) {$LTLoc = 1}
 
 ### You should not need to modify below here ###
@@ -91,16 +91,104 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
         outlog "The LT agent registry keys do not look right - going to reinstall"
 	    Reinstall
     } else {
-	    outlog "It seems LT is installed - checking that services look OK."
-	    try {
-		    Set-Service LTService -startupType Automatic -ErrorAction Stop -WarningAction Stop 
-		    Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop -WarningAction Stop 
-		    Start-Service LTService -ErrorAction Stop -WarningAction Stop 
-		    Start-Service LTSvcMon -ErrorAction Stop -WarningAction Stop 
-	    } catch {
-		    outlog "Something is wrong with the services as they will not start, they may not even be installed. - going to reinstall"
-		    Reinstall
-	    }
-	    outlog "Labtech Agent checks completed OK. Enjoy the rest of your uptime!"
+	    outlog "Registry checks OK. It seems LT is installed - checking that services look OK."
+	    outlog "Checking LTService is set to Auto start"
+		If ((Get-Service LTService -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).StartType -ne "Automatic") { 
+			outlog "LTService is not set to Auto start. Attempting to set it to Auto"
+			Try {
+				Set-Service LTService -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+				outlog "OK"
+			} catch {
+				$ErrorMessage = $_.Exception.Message
+				outlog "EXCEPTION: $ErrorMessage"
+				outlog "Waiting 120 seconds and trying again"
+				Start-Sleep 120 
+				Try {
+					Set-Service LTService -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+					outlog "OK"
+				} catch {
+					$ErrorMessage = $_.Exception.Message
+					outlog "EXCEPTION: $ErrorMessage"
+					outlog "Service LTService is broken. Calling Reinstall"
+					Reinstall
+				}
+			}
+		} else {
+			outlog "LTService already set to Auto start"
+		}
+
+		outlog "Checking LTService is Running"
+		If ((Get-Service LTService -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Status -ne "Running") { 
+			outlog "LTService is not Running. Attempting to start it."
+			Try {
+				Start-Service LTService -ErrorAction Stop -WarningAction Stop  
+			} catch {
+				$ErrorMessage = $_.Exception.Message
+				outlog "EXCEPTION: $ErrorMessage"
+				outlog "Waiting 120 seconds and trying again"
+				Start-Sleep 120 
+				Try {
+					Start-Service LTService -ErrorAction Stop -WarningAction Stop  
+				} catch {
+					$ErrorMessage = $_.Exception.Message
+					outlog "EXCEPTION: $ErrorMessage"
+					outlog "Service LTService is would not start. Calling Reinstall"
+					Reinstall
+				}
+			}
+		} else {
+			outlog "LTService already Running"
+		}
+
+		outlog "Checking LTSvcMon is set to Auto start"
+		If ((Get-Service LTSvcMon -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).StartType -ne "Automatic") { 
+			outlog "LTSvcMon is not set to Auto start. Attempting to set it to Auto"
+			Try {
+				Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+				outlog "OK"
+			} catch {
+				$ErrorMessage = $_.Exception.Message
+				outlog "EXCEPTION: $ErrorMessage"
+				outlog "Waiting 120 seconds and trying again"
+				Start-Sleep 120 
+				Try {
+					Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+					outlog "OK"
+				} catch {
+					$ErrorMessage = $_.Exception.Message
+					outlog "EXCEPTION: $ErrorMessage"
+					outlog "Service LTSvcMon is broken. Calling Reinstall"
+					Reinstall
+				}
+			}
+		} else {
+			outlog "LTSvcMon already set to Auto start"
+		}
+
+		outlog "Checking LTSvcMon is Running"
+		If ((Get-Service LTSvcMon -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Status -ne "Running") { 
+			outlog "LTSvcMon is not Running. Attempting to start it."
+			Try {
+				Start-Service LTSvcMon -ErrorAction Stop -WarningAction Stop
+				outlog "OK"  
+			} catch {
+				$ErrorMessage = $_.Exception.Message
+				outlog "EXCEPTION: $ErrorMessage"
+				outlog "Waiting 120 seconds and trying again"
+				Start-Sleep 120 
+				Try {
+					Start-Service LTSvcMon -ErrorAction Stop -WarningAction Stop  
+					outlog "OK"
+				} catch {
+					$ErrorMessage = $_.Exception.Message
+					outlog "EXCEPTION: $ErrorMessage"
+					outlog "Service LTSvcMon is would not start. Calling Reinstall"
+					Reinstall
+				}
+			}
+		} else {
+			outlog "LTSvcMon already Running"
+		}
+		outlog "Labtech Agent checks completed OK. Enjoy the rest of your uptime!"
     }
 }
