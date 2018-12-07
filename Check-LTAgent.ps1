@@ -7,6 +7,7 @@
 ## License on my code: MIT license - please leave header intact and consider submitting improvements to this project
 ## via the public repo: https://github.com/AlexHeylin/Check-LTAgent
 ## Supplied with no warranty etc. If your cat dies - don't blame me. 
+## Be aware this code may block, and take up to 5-10 minutes to run. Do not use as a user login script!
 ## Change log: 2018-11-07 Initial version.
 ## 2018-11-14 Tidy up comments and code. Improve flow control logic.
 ## 2018-11-15 Rework so we can invoke this directly from scheduled task via HTTPS.
@@ -15,8 +16,8 @@
 
 
 ## If you want to set default / override values, do that here
-# $LTSrv = "labtech.mymspname.here"
-# $LogFile = $null
+## $LTSrv = "labtech.mymspname.here"
+## $LogFile = "c:\windows\temp\Check-LTAgent.txt"
 ## Default to location ID 1 (default in LT)
 If ($LTLoc -eq $null) {$LTLoc = 1}
 
@@ -34,44 +35,72 @@ function outlog {
 }
 
 Function Reinstall {
-  outlog "Starting Reinstall function"
+	outlog "Starting Reinstall function"
 
-  ## Check TerminalServerMode using WMI.  1 = Application Server mode (Terminal Server), 0 = Remote Administration mode (normal RDP)
-  if ( (Get-WmiObject -Namespace "root\CIMV2\TerminalServices" -Class "Win32_TerminalServiceSetting" ).TerminalServerMode -eq 1) {
-    outlog "Terminal server detected. Switching it to INSTALL mode"
-    $result = iex "$env:windir\system32\CHANGE USER /INSTALL"
-    outlog "Result was $result"
-  }
-
-  ## Install .Net 3.5 if missing
-  $Result = Dism /online /get-featureinfo /featurename:NetFx3
-  If($Result -contains "State : Enabled")	{
-    outlog ".Net Framework 3.5 is installed and enabled."
-  } Else {
-      outlog ".Net Framework 3.5 not detected, calling DISM to install"
-      Dism /online /Enable-feature /featurename:NetFx3 | Out-Null 
-      $Result = Dism /online /Get-featureinfo /featurename:NetFx3
-      If($Result -contains "State : Enabled"){
-        outlog "Installed .Net Framework 3.5 successfully."
-      } Else {
-        outlog "Failed to install install .Net Framework 3.5. Result[$result]"
-          outlog "Trying to install LabTech agent as we've got nothing to lose."
-      }
-  }
-
-  ## Dynamically load the latest LT PoSh module
+	outlog "Trying to repair LTAgent first..."
+	## Dynamically load the latest LT PoSh module
 	outlog "Dynamically loading LT-PoSh module from Github"
-	(new-object Net.WebClient).DownloadString('http://bit.ly/LTPoSh') | iex ; 
-	outlog "Calling Reinstall-LTService -Server $LTSrv -LocationID $LTLoc"
-	## Call the module to do the (re)install
-	#Reinstall-LTService -Server $LTSrv -LocationID $LTLoc
-	Reinstall-LTService -Server $LTSrv -LocationID $LTLoc >> $LogFile
+	try {
+		(new-object Net.WebClient).DownloadString('http://bit.ly/LTPoSh') | iex ; 
+	} catch {
+		$ErrorMessage = $_.Exception.Message
+		outlog "EXCEPTION: $ErrorMessage"
+		throw
+	}
 
-	## Check TerminalServerMode using WMI.  1 = Application Server mode (Terminal Server), 0 = Remote Administration mode (normal RDP)
-	if ( (Get-WmiObject -Namespace "root\CIMV2\TerminalServices" -Class "Win32_TerminalServiceSetting" ).TerminalServerMode -eq 1) {
-		outlog "Terminal server detected. Switching it to EXECUTE mode"
-		$result = iex "$env:windir\system32\CHANGE USER /EXECUTE"
-		outlog "Result was $result"
+	if (((('LTService') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 0) -or ((('LTSvcMon') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 0)) {
+		outlog "Services found - Calling Restart-LTService"
+		try {
+			$startResult = Restart-LTService
+			## NOTE: Do NOT rely on the text of the result. It can lie and say services started when they LTService did not start. 
+			## TODO: Try and fix & submit change to LT-PoSh for this.
+		} catch {
+			$ErrorMessage = $_.Exception.Message
+			outlog "EXCEPTION: $ErrorMessage"	
+			outlog "Result of Restart-LTService was $startResult"
+			throw
+		}
+	} else {
+		outlog "At least one service not found"
+	}
+	
+	if (((Get-Service LTService -EA 0 -WA 0 ).Status -ne "Running") -or ((Get-Service LTSvcMon -EA 0 -WA 0 ).Status -ne "Running")) {
+		outlog "Services didn't start properly, proceeding with reinstall"
+		## Check TerminalServerMode using WMI.  1 = Application Server mode (Terminal Server), 0 = Remote Administration mode (normal RDP)
+		if ( (Get-WmiObject -Namespace "root\CIMV2\TerminalServices" -Class "Win32_TerminalServiceSetting" ).TerminalServerMode -eq 1) {
+			outlog "Terminal server detected. Switching it to INSTALL mode"
+			$result = iex "$env:windir\system32\CHANGE USER /INSTALL"
+			outlog "Result was $result"
+		}
+
+
+		## OK, we're going to have to reinstall.
+		outlog "We're going to have to get more brutal and try a (re)install. Taking backup of settings first"
+		$backupResult = New-LTServiceBackup
+		outlog "Result of New-LTServiceBackup was $backupResult"
+
+		## Use any existing LocationID unless $forceLocID set
+		## This allows agents to REinstall to the location they're already in LT, even if cmd line params use a different default site.
+		## Stops agents moving back to "main" location if they've been manually moved to another location in LT.
+		If (($forceLocID -ne $true) -and ((get-LTServiceInfo).LocationID -ge 1)){
+			outlog "Found existing LocationID and forceLocID not set so using it"
+			$LTLoc = (get-LTServiceInfo).LocationID
+		}
+
+		outlog "Calling Reinstall-LTService -Server $LTSrv -LocationID $LTLoc"
+		## Call the module to do the (re)install
+		#Reinstall-LTService -Server $LTSrv -LocationID $LTLoc
+		$InstallResult = Reinstall-LTService -Server $LTSrv -LocationID $LTLoc >> $LogFile
+		outlog "Result of Reinstall-LTService was $InstallResult"
+
+		## Check TerminalServerMode using WMI.  1 = Application Server mode (Terminal Server), 0 = Remote Administration mode (normal RDP)
+		if ( (Get-WmiObject -Namespace "root\CIMV2\TerminalServices" -Class "Win32_TerminalServiceSetting" ).TerminalServerMode -eq 1) {
+			outlog "Terminal server detected. Switching it to EXECUTE mode"
+			$result = iex "$env:windir\system32\CHANGE USER /EXECUTE"
+			outlog "Result was $result"
+		}
+	} else {
+		outlog "Services started OK so we avoided reinstall :-)"
 	}
 	outlog "Finished reinstall function"
 }
@@ -91,7 +120,22 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
         outlog "The LT agent registry keys do not look right - going to reinstall"
 	    Reinstall
     } else {
-	    outlog "Registry checks OK. It seems LT is installed - checking that services look OK."
+	    outlog "Registry checks OK. Checking services exist"
+		if ((('LTService') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 0) {
+			outlog "LTService is missing. Calling reinstall."
+			Reinstall
+		} else {
+			outlog "LTservice is installed"
+		}
+
+		if ((('LTSvcMon') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 0) {
+			outlog "LTSvcMon is missing. Calling reinstall."
+			Reinstall
+		} else {
+			outlog "LTSvcMon is installed"
+		}		
+		outlog "It seems LT is installed - checking that services look OK."
+		
 	    outlog "Checking LTService is set to Auto start"
 		If ((Get-Service LTService -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).StartType -ne "Automatic") { 
 			outlog "LTService is not set to Auto start. Attempting to set it to Auto"
