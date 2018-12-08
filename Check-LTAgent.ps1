@@ -147,7 +147,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		outlog "It seems LT is installed - checking that services look OK."
 		
 	    outlog "Checking LTService is set to Auto start"
-		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTService'").StartMode) -eq "Auto") { 
+		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTService'").StartMode) -ne "Auto") { 
 			outlog "LTService is not set to Auto start. Attempting to set it to Auto"
 			Try {
 				Set-Service LTService -startupType Automatic -ErrorAction Stop -WarningAction Stop 
@@ -195,7 +195,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		}
 
 		outlog "Checking LTSvcMon is set to Auto start"
-		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTSvcMon'").StartMode) -eq "Auto") { 
+		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTSvcMon'").StartMode) -ne "Auto") { 
 			outlog "LTSvcMon is not set to Auto start. Attempting to set it to Auto"
 			Try {
 				Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop -WarningAction Stop 
