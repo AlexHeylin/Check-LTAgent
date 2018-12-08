@@ -14,7 +14,7 @@
 ## 2018-11-15 First public release on Github - Enjoy!  (I know it's messy, but seems to work.)
 ## 2018-12-06 Rework the services section to be more forgiving and retry changes to avoid unnecessary reinstalls.
 ## 2018-12-08 Force logging on and truncate log automatically, to debug with unexpected reinstalls.
-
+## 2018-12-08 Fix service start type detection for older PoSh.
 
 ## If you want to set default / override values, do that here
 ## $LTSrv = "labtech.mymspname.here"
@@ -39,7 +39,12 @@ function outlog {
     write-output "$LogLine"
     if ($LogFile -ne "" -and $LogFile -ne $null) {
         $FileLine = (get-date -Format 'yyyy-MM-dd HH:mm:ss') + " $LogLine"
-        Add-Content $LogFile $FileLine
+        try {
+			Add-Content $LogFile $FileLine
+		} else {
+			$ErrorMessage = $_.Exception.Message
+			write-warning "Exception writing to log file [$LogFile] - [$ErrorMessage]"
+		}
     }
 }
 
