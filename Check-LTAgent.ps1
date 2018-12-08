@@ -243,6 +243,6 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		} else {
 			outlog "LTSvcMon already Running"
 		}
-		outlog "Labtech Agent checks completed OK. Enjoy the rest of your uptime!"
+		outlog "### Labtech Agent checks completed OK. Enjoy the rest of your uptime!"
     }
 }
