@@ -13,18 +13,27 @@
 ## 2018-11-15 Rework so we can invoke this directly from scheduled task via HTTPS.
 ## 2018-11-15 First public release on Github - Enjoy!  (I know it's messy, but seems to work.)
 ## 2018-12-06 Rework the services section to be more forgiving and retry changes to avoid unnecessary reinstalls.
+## 2018-12-08 Force logging on and truncate log automatically, to debug with unexpected reinstalls.
 
 
 ## If you want to set default / override values, do that here
 ## $LTSrv = "labtech.mymspname.here"
-## $LogFile = "c:\windows\temp\Check-LTAgent.txt"
+$LogFile = "$env:windir\temp\Check-LTAgent.txt"
 ## Default to location ID 1 (default in LT)
 If ($LTLoc -eq $null) {$LTLoc = 1}
+## Max lines in log file. If log file not used, you can ignore this`
+$LogMaxLines = 10000
 
 ### You should not need to modify below here ###
 
 ## Functions (at the top so it can be debugged easily)
 
+## Truncate log before we start
+If ($LogFile -ne "" -and $LogFile -ne $null) {
+	(Get-Content $LogFile)[-$LogMaxLines..-1] | set-content $LogFile
+}
+
+## Log & Screen output function
 function outlog {
     Param($LogLine)
     write-output "$LogLine"
@@ -34,6 +43,7 @@ function outlog {
     }
 }
 
+## Do the needful if unavoidable
 Function Reinstall {
 	outlog "Starting Reinstall function"
 
