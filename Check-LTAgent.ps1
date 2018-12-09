@@ -15,6 +15,7 @@
 ## 2018-12-06 Rework the services section to be more forgiving and retry changes to avoid unnecessary reinstalls.
 ## 2018-12-08 Force logging on and truncate log automatically, to debug with unexpected reinstalls.
 ## 2018-12-08 Fix service start type detection for older PoSh.
+## 2018-12-09 Add centralised logging & various reliability improvements
 
 ## If you want to set default / override values, do that here
 ## $LTSrv = "labtech.mymspname.here"
@@ -117,7 +118,6 @@ function outlog {
 			}
 		}
     }
-
 }
 
 
