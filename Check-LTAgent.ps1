@@ -57,7 +57,7 @@ NUMERIC		DESCRIPTION									OUR ABBREVIATION
 #>
 
 ## Set up some variables for logging so we don't keep calling their functions
-$LogUUID = (get-wmiobject Win32_ComputerSystemProduct).UUID + "__" + (gwmi win32_bios).SerialNumber ;
+$LogUUID = (get-wmiobject Win32_ComputerSystemProduct).UUID + "__" + ((gwmi win32_bios).SerialNumber).Trim() ;
 $PsVer = $PSVersionTable.PSVersion.ToString() ;
 $ComputerDomain = (Get-WmiObject Win32_ComputerSystem).Domain ;
 $OsVersion = ((Get-WmiObject -Class Win32_OperatingSystem -EA 0 -WA 0 ).Version).ToString() ;
