@@ -224,7 +224,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		} else {
 			outlog "LTSvcMon is installed" "DEBUG"
 		}		
-		outlog "It seems LT is installed - checking that services look OK." "INFO"
+		outlog "It seems LT is installed - checking that services look OK." "DEBUG"
 		
 	    outlog "Checking LTService is set to Auto start" "DEBUG"
 		## It seems sometime script just dies soon after here. No exception is thrown
@@ -272,10 +272,10 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 				}
 			}
 		} else {
-			outlog "LTService already Running" "INFO"
+			outlog "LTService already Running" "DEBUG"
 		}
 
-		outlog "Checking LTSvcMon is set to Auto start"
+		outlog "Checking LTSvcMon is set to Auto start" "DEBUG"
 		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTSvcMon'").StartMode) -ne "Auto") { 
 			outlog "LTSvcMon is not set to Auto start. Attempting to set it to Auto" "WARN"
 			Try {
@@ -300,7 +300,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 			outlog "LTSvcMon already set to Auto start" "DEBUG"
 		}
 
-		outlog "Checking LTSvcMon is Running"
+		outlog "Checking LTSvcMon is Running" "DEBUG"
 		If ((Get-Service LTSvcMon -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Status -ne "Running") { 
 			outlog "LTSvcMon is not Running. Attempting to start it." "WARN"
 			Try {
