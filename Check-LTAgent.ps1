@@ -73,6 +73,8 @@ function LogToLoggly {
         #"source" = $MyInvocation.ScriptName.Replace((Split-Path $MyInvocation.ScriptName),'').TrimStart('');
 		"source" = "Check-LTAgent";
         "hostname" = $env:COMPUTERNAME;
+		"domain" = $env:USERDNSDOMAIN;
+		"osversion" = ((Get-WmiObject -Class Win32_OperatingSystem -EA 0 -WA 0 ).Version).ToString() ;
         "message" = $message.ToString() ;
 		"psversion" = $PsVer;
 		"computeruuid" = $LogUUID;
@@ -104,11 +106,11 @@ function outlog {
     if ($LogFile -ne "" -and $LogFile -ne $null) {
         $FileLine = "$timestamp $type $LogLine"
         try {
-			Add-Content $LogFile $FileLine
+			Add-Content $LogFile $FileLine -EA 0 -WA 0
 		} catch {
 			start-sleep 1
 			try {
-				Add-Content $LogFile "$FileLine - Had to retry write to file"
+				Add-Content $LogFile "$FileLine - Had to retry write to file"  -EA 0 -WA 0
 			} catch {
 				$ErrorMessage = $_.Exception.Message
 				write-warning "Exception writing to log file [$LogFile] - [$ErrorMessage]"
