@@ -76,7 +76,7 @@ function LogToLoggly {
 		"computeruuid" = $LogUUID;
     }
     
-	$jsonstream | Invoke-WebRequest -Method Post -Uri $LogglyLogURI
+	$jsonstream | Invoke-WebRequest -Method Post -Uri $LogglyLogURI -UseBasicParsing
 }
 
 ## Log & Screen output function
@@ -92,9 +92,7 @@ function outlog {
 	try {
 		$LogglyResult = LogToLoggly "$LogLine" "$Type"
         if ($LogglyResult.StatusCode -ne 200 -or $LogglyResult.StatusDescription -ne "OK" ) {
-
-        $LogLine = $LogLine + "  ERROR writing to Loggly: $LogglyResult.RawContent";
-
+			$LogLine = $LogLine + "  ERROR writing to Loggly: $LogglyResult.RawContent";
         }
 	} catch {
 		$ErrorMessage = $_.Exception.Message
