@@ -59,6 +59,8 @@ NUMERIC		DESCRIPTION									OUR ABBREVIATION
 ## Set up some variables for logging so we don't keep calling their functions
 $LogUUID = (get-wmiobject Win32_ComputerSystemProduct).UUID + "__" + (gwmi win32_bios).SerialNumber ;
 $PsVer = $PSVersionTable.PSVersion.ToString() ;
+$ComputerDomain = (Get-WmiObject Win32_ComputerSystem).Domain ;
+$OsVersion = ((Get-WmiObject -Class Win32_OperatingSystem -EA 0 -WA 0 ).Version).ToString() ;
 $LogglyCustomerToken = "529d074f-ed30-49f8-90c3-0ade30dbae9e"
 $LogglyLogURI = "https://logs-01.loggly.com/bulk/" + $LogglyCustomerToken + "/tag/powershell"
 
@@ -74,8 +76,8 @@ function LogToLoggly {
         #"source" = $MyInvocation.ScriptName.Replace((Split-Path $MyInvocation.ScriptName),'').TrimStart('');
 		"source" = "Check-LTAgent";
         "hostname" = $env:COMPUTERNAME;
-		"domain" = $env:USERDNSDOMAIN;
-		"osversion" = ((Get-WmiObject -Class Win32_OperatingSystem -EA 0 -WA 0 ).Version).ToString() ;
+		"domain" = $ComputerDomain;
+		"osversion" = $OsVersion ;
         "message" = $message.ToString() ;
 		"psversion" = $PsVer;
 		"computeruuid" = $LogUUID;
