@@ -30,11 +30,13 @@ $LogMaxLines = 10000
 
 ## Truncate log file before we start
 If ($LogFile -ne "" -and $LogFile -ne $null) {
-	try {
-		(Get-Content $LogFile)[-$LogMaxLines..-1] | set-content $LogFile
-	} catch {
-		$ErrorMessage = $_.Exception.Message
-		write-warning "Exception truncating the log file [$LogFile]"
+	if (Test-Path $LogFile) {
+		try {
+			(Get-Content $LogFile -EA 0 -WA 0)[-$LogMaxLines..-1] | set-content $LogFile
+		} catch {
+			$ErrorMessage = $_.Exception.Message
+			write-warning "Exception truncating the log file [$LogFile]"
+		}
 	}
 }
 
