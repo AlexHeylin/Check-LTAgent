@@ -28,25 +28,96 @@ $LogMaxLines = 10000
 
 ## Functions (at the top so it can be debugged easily)
 
-## Truncate log before we start
+## Truncate log file before we start
 If ($LogFile -ne "" -and $LogFile -ne $null) {
-	(Get-Content $LogFile)[-$LogMaxLines..-1] | set-content $LogFile
+	try {
+		(Get-Content $LogFile)[-$LogMaxLines..-1] | set-content $LogFile
+	} catch {
+		$ErrorMessage = $_.Exception.Message
+		write-warning "Exception truncating the log file [$LogFile]"
+	}
+}
+
+## Centralise logging
+
+<#  LOG SEVERITIES
+NUMERIC		DESCRIPTION									OUR ABBREVIATION
+========================================================================
+  0       	Emergency: system is unusable				EMERG
+  1       	Alert: action must be taken immediately		ALERT
+  2       	Critical: critical conditions				CRIT
+  3       	Error: error conditions						ERROR
+  4       	Warning: warning conditions					WARN
+  5       	Notice: normal but significant condition	NOTICE
+  6       	Informational: informational messages		INFO
+  7       	Debug: debug-level messages					DEBUG
+#>
+
+## Set up some variables for logging so we don't keep calling their functions
+$LogUUID = (get-wmiobject Win32_ComputerSystemProduct).UUID + "__" + (gwmi win32_bios).SerialNumber ;
+$PsVer = $PSVersionTable.PSVersion.ToString() ;
+$LogglyCustomerToken = "529d074f-ed30-49f8-90c3-0ade30dbae9e"
+$LogglyLogURI = "https://logs-01.loggly.com/bulk/" + $LogglyCustomerToken + "/tag/powershell"
+
+function LogToLoggly {
+    param ($Message, $Type)
+    
+    # If we don't specify a type via parameter, assume it's information
+    if ($Type -eq $null) { $Type = "INFO" }
+    
+	$jsonstream = @{
+        "timestamp" = (get-date -Format o);
+        "type" = $Type;
+        #"source" = $MyInvocation.ScriptName.Replace((Split-Path $MyInvocation.ScriptName),'').TrimStart('');
+		"source" = "Check-LTAgent";
+        "hostname" = $env:COMPUTERNAME;
+        "message" = $message.ToString() ;
+		"psversion" = $PsVer;
+		"computeruuid" = $LogUUID;
+    }
+    
+	$jsonstream | Invoke-WebRequest -Method Post -Uri $LogglyLogURI
 }
 
 ## Log & Screen output function
 function outlog {
-    Param($LogLine)
-    write-output "$LogLine"
+    Param($LogLine, $type)
+    
+    write-output "$LogLine"    
+
+    # If we don't specify a type via parameter, assume it's information
+    if ($Type -eq $null) { $Type = "INFO" }
+	$timestamp = (get-date -Format s) ;
+	
+	try {
+		$LogglyResult = LogToLoggly "$LogLine" "$Type"
+        if ($LogglyResult.StatusCode -ne 200 -or $LogglyResult.StatusDescription -ne "OK" ) {
+
+        $LogLine = $LogLine + "  ERROR writing to Loggly: $LogglyResult.RawContent";
+
+        }
+	} catch {
+		$ErrorMessage = $_.Exception.Message
+		$LogLine = $LogLine + "  EXCEPTION writing to Loggly: $ErrorMessage";
+	}
+
     if ($LogFile -ne "" -and $LogFile -ne $null) {
-        $FileLine = (get-date -Format 'yyyy-MM-dd HH:mm:ss') + " $LogLine"
+        $FileLine = "$timestamp $type $LogLine"
         try {
 			Add-Content $LogFile $FileLine
-		} else {
-			$ErrorMessage = $_.Exception.Message
-			write-warning "Exception writing to log file [$LogFile] - [$ErrorMessage]"
+		} catch {
+			start-sleep 1
+			try {
+				Add-Content $LogFile "$FileLine - Had to retry write to file"
+			} catch {
+				$ErrorMessage = $_.Exception.Message
+				write-warning "Exception writing to log file [$LogFile] - [$ErrorMessage]"
+			}
 		}
     }
+
 }
+
 
 ## Do the needful if unavoidable
 Function Reinstall {
@@ -152,6 +223,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		outlog "It seems LT is installed - checking that services look OK."
 		
 	    outlog "Checking LTService is set to Auto start"
+		## It seems sometime script just dies soon after here. No exception is thrown
 		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTService'").StartMode) -ne "Auto") { 
 			outlog "LTService is not set to Auto start. Attempting to set it to Auto"
 			Try {
@@ -249,6 +321,5 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 			outlog "LTSvcMon already Running"
 		}
 		outlog "### Labtech Agent checks completed OK. Enjoy the rest of your uptime!"
-		outlog ""
     }
 }
