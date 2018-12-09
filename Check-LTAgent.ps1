@@ -72,7 +72,7 @@ function LogToLoggly {
     
 	$jsonstream = @{
         "timestamp" = (get-date -Format o);
-        "type" = $Type;
+        "severity_label" = $Type;
         #"source" = $MyInvocation.ScriptName.Replace((Split-Path $MyInvocation.ScriptName),'').TrimStart('');
 		"source" = "Check-LTAgent";
         "hostname" = $env:COMPUTERNAME;
