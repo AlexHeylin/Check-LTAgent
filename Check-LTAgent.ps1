@@ -97,14 +97,17 @@ function outlog {
     if ($Type -eq $null) { $Type = "INFO" }
 	$timestamp = (get-date -Format s) ;
 	
-	try {
-		$LogglyResult = LogToLoggly "$LogLine" "$Type"
-        if ($LogglyResult.StatusCode -ne 200 -or $LogglyResult.StatusDescription -ne "OK" ) {
-			$LogLine = $LogLine + "  ERROR writing to Loggly: $LogglyResult.RawContent";
-        }
-	} catch {
-		$ErrorMessage = $_.Exception.Message
-		$LogLine = $LogLine + "  EXCEPTION writing to Loggly: $ErrorMessage";
+	# Logging to Loggly doesn't work this way before PoSh 3+, so skip silently if not supported
+	if ($PSVersionTable.PSVersion.Major -ge 3) {
+		try {
+			$LogglyResult = LogToLoggly "$LogLine" "$Type"
+			if ($LogglyResult.StatusCode -ne 200 -or $LogglyResult.StatusDescription -ne "OK" ) {
+				$LogLine = $LogLine + "  ERROR writing to Loggly: $LogglyResult.RawContent";
+			}
+		} catch {
+			$ErrorMessage = $_.Exception.Message
+			$LogLine = $LogLine + "  EXCEPTION writing to Loggly: $ErrorMessage";
+		}
 	}
 
     if ($LogFile -ne "" -and $LogFile -ne $null) {
