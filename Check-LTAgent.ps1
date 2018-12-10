@@ -16,6 +16,7 @@
 ## 2018-12-08 Force logging on and truncate log automatically, to debug with unexpected reinstalls.
 ## 2018-12-08 Fix service start type detection for older PoSh.
 ## 2018-12-09 Add centralised logging & log severities, also various reliability improvements. 
+## 2018-12-10 Fix logic error
 
 ## If you want to set default / override values, do that here
 ## $LTSrv = "labtech.mymspname.here"
@@ -138,8 +139,8 @@ Function Reinstall {
 		throw
 	}
 
-	if (((('LTService') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 0) -or ((('LTSvcMon') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 0)) {
-		outlog "Services found - Calling Restart-LTService" "DEBUG"
+	if (((('LTService') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 1) -and ((('LTSvcMon') | Get-Service -EA 0 | Measure-Object | Select-Object -Expand Count) -eq 1)) {
+		outlog "Both services found - Calling Restart-LTService" "DEBUG"
 		try {
 			$startResult = Restart-LTService
 			## NOTE: Do NOT rely on the text of the result. It can lie and say services started when they LTService did not start. 
