@@ -16,7 +16,7 @@
 ## 2018-12-08 Force logging on and truncate log automatically, to debug with unexpected reinstalls.
 ## 2018-12-08 Fix service start type detection for older PoSh.
 ## 2018-12-09 Add centralised logging & log severities, also various reliability improvements. 
-## 2018-12-10 Fix logic error
+## 2018-12-10 Fix logic error & workaround some incompatibilities in PoSh v2
 
 ## If you want to set default / override values, do that here
 ## $LTSrv = "labtech.mymspname.here"
@@ -167,8 +167,15 @@ Function Reinstall {
 
 		## OK, we're going to have to reinstall.
 		outlog "We're going to have to get more brutal and try a (re)install. Taking backup of settings first" "WARN"
-		$backupResult = New-LTServiceBackup
-		outlog "Result of New-LTServiceBackup was $backupResult" "DEBUG"
+		## Note this function seems to fail on PoSh v2, so catch the error and carry on regardless.
+		try {
+			$backupResult = New-LTServiceBackup
+		} catch {
+			$ErrorMessage = $_.Exception.Message
+			outlog "EXCEPTION: $ErrorMessage" "ERROR"
+		} finally {
+			outlog "Result of New-LTServiceBackup was $backupResult" "DEBUG"
+		}
 
 		## Use any existing LocationID unless $forceLocID set
 		## This allows agents to REinstall to the location they're already in LT, even if cmd line params use a different default site.
