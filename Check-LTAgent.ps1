@@ -17,6 +17,7 @@
 ## 2018-12-08 Fix service start type detection for older PoSh.
 ## 2018-12-09 Add centralised logging & log severities, also various reliability improvements. 
 ## 2018-12-10 Fix logic error & workaround some incompatibilities in PoSh v2
+## 2018-12-14 Make attempts to start service more tolerant of "starting" etc and wait longer before retrying
 
 ## If you want to set default / override values, do that here
 ## $LTSrv = "labtech.mymspname.here"
@@ -242,7 +243,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTService'").StartMode) -ne "Auto") { 
 			outlog "LTService is not set to Auto start. Attempting to set it to Auto" "WARN"
 			Try {
-				Set-Service LTService -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+				Set-Service LTService -startupType Automatic -ErrorAction Stop
 				outlog "OK" "DEBUG"
 			} catch {
 				$ErrorMessage = $_.Exception.Message
@@ -250,7 +251,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 				outlog "Waiting 120 seconds and trying again" "DEBUG"
 				Start-Sleep 120 
 				Try {
-					Set-Service LTService -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+					Set-Service LTService -startupType Automatic -ErrorAction Stop 
 					outlog "OK" "DEBUG"
 				} catch {
 					$ErrorMessage = $_.Exception.Message
@@ -267,14 +268,14 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		If ((Get-Service LTService -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Status -ne "Running") { 
 			outlog "LTService is not Running. Attempting to start it." "WARN"
 			Try {
-				Start-Service LTService -ErrorAction Stop -WarningAction Stop  
+				Start-Service LTService -ErrorAction Stop 
 			} catch {
 				$ErrorMessage = $_.Exception.Message
 				outlog "EXCEPTION: $ErrorMessage" "ERROR"
-				outlog "Waiting 120 seconds and trying again" "DEBUG"
-				Start-Sleep 120 
+				outlog "Waiting 600 seconds and trying again" "DEBUG"
+				Start-Sleep 600
 				Try {
-					Start-Service LTService -ErrorAction Stop -WarningAction Stop  
+					Start-Service LTService -ErrorAction Stop 
 				} catch {
 					$ErrorMessage = $_.Exception.Message
 					outlog "EXCEPTION: $ErrorMessage" "ERROR"
@@ -290,7 +291,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		If (((Get-WmiObject -Class Win32_Service -Property StartMode -Filter "Name='LTSvcMon'").StartMode) -ne "Auto") { 
 			outlog "LTSvcMon is not set to Auto start. Attempting to set it to Auto" "WARN"
 			Try {
-				Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+				Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop 
 				outlog "OK" "DEBUG"
 			} catch {
 				$ErrorMessage = $_.Exception.Message
@@ -298,7 +299,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 				outlog "Waiting 120 seconds and trying again" "DEBUG"
 				Start-Sleep 120 
 				Try {
-					Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop -WarningAction Stop 
+					Set-Service LTSvcMon -startupType Automatic -ErrorAction Stop 
 					outlog "OK"
 				} catch {
 					$ErrorMessage = $_.Exception.Message
@@ -315,15 +316,15 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		If ((Get-Service LTSvcMon -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Status -ne "Running") { 
 			outlog "LTSvcMon is not Running. Attempting to start it." "WARN"
 			Try {
-				Start-Service LTSvcMon -ErrorAction Stop -WarningAction Stop
+				Start-Service LTSvcMon -ErrorAction Stop 
 				outlog "OK"  
 			} catch {
 				$ErrorMessage = $_.Exception.Message
 				outlog "EXCEPTION: $ErrorMessage" "ERROR"
-				outlog "Waiting 120 seconds and trying again" "DEBUG"
-				Start-Sleep 120 
+				outlog "Waiting 600 seconds and trying again" "DEBUG"
+				Start-Sleep 600 
 				Try {
-					Start-Service LTSvcMon -ErrorAction Stop -WarningAction Stop  
+					Start-Service LTSvcMon -ErrorAction Stop 
 					outlog "OK" "DEBUG"
 				} catch {
 					$ErrorMessage = $_.Exception.Message
