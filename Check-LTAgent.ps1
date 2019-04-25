@@ -18,6 +18,7 @@
 ## 2018-12-09 Add centralised logging & log severities, also various reliability improvements. 
 ## 2018-12-10 Fix logic error & workaround some incompatibilities in PoSh v2
 ## 2018-12-14 Make attempts to start service more tolerant of "starting" etc and wait longer before retrying
+## 2019-04-25 Deal with multiple addresses in serverAddress set by LT templates
 
 ## If you want to set default / override values, do that here
 ## $LTSrv = "labtech.mymspname.here"
@@ -216,7 +217,7 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
     outlog "Checking health of LabTech agent" "DEBUG";
 
     if ( ((Get-ItemProperty -Path HKLM:\SOFTWARE\LabTech\Service -Name "ID" -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).ID -eq $null) `
-		    -or ((Get-ItemProperty -Path HKLM:\SOFTWARE\LabTech\Service\Settings  -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).ServerAddress -notlike "*" + $LTSrv)
+		    -or ((Get-ItemProperty -Path HKLM:\SOFTWARE\LabTech\Service\Settings  -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).ServerAddress -notlike "*" + $LTSrv + "*")
 	    )  
     { 
         outlog "The LT agent registry keys do not look right - going to reinstall" "ERROR"
