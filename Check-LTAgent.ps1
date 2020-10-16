@@ -1,5 +1,5 @@
 ## Check LabTech agent and re/install if needed.
-## Written by: Alex Heylin @ Gregory Micallef Associates - www.gmal.co.uk  
+## Written by: Alex Heylin (alex at alexheylin.com) @ Gregory Micallef Associates www.gmal.co.uk  
 ## Inspired by batch file written by darrenwhite99 @ LTG Slack - thanks for sharing Darren!
 ## Requires (and dynamically imports) the Labtech-Powershell-Module
 ## https://github.com/LabtechConsulting/LabTech-Powershell-Module
@@ -8,7 +8,10 @@
 ## via the public repo: https://github.com/AlexHeylin/Check-LTAgent
 ## Supplied with no warranty etc. If your cat dies - don't blame me. 
 ## Be aware this code may block, and take up to 5-10 minutes to run. Do not use as a user login script!
-## Change log: 2018-11-07 Initial version.
+## TODO: Currently this may throw errors which are expected, such as when it calls Reinstall-LTService when LTService has not previously bee installed so LT-PoSh fails to take a backup of the settings. 
+
+## CHANGE LOG
+## 2018-11-07 Initial version.
 ## 2018-11-14 Tidy up comments and code. Improve flow control logic.
 ## 2018-11-15 Rework so we can invoke this directly from scheduled task via HTTPS.
 ## 2018-11-15 First public release on Github - Enjoy!  (I know it's messy, but seems to work.)
@@ -19,14 +22,19 @@
 ## 2018-12-10 Fix logic error & workaround some incompatibilities in PoSh v2
 ## 2018-12-14 Make attempts to start service more tolerant of "starting" etc and wait longer before retrying
 ## 2019-04-25 Deal with multiple addresses in serverAddress set by LT templates
+## 2020-10-16 Add InstallerToken parameter as now required to get the MSI
+## 2020-10-16 Tidied up and changed LogFile and LogMaxLines overrides to default instead
 
 ## If you want to set default / override values, do that here
-## $LTSrv = "labtech.mymspname.here"
-$LogFile = "$env:windir\temp\Check-LTAgent.txt"
+# Set default log file location
+If ($LogFile -eq $null) {$LogFile = "$env:windir\temp\Check-LTAgent.txt"}
 ## Default to location ID 1 (default in LT)
 If ($LTLoc -eq $null) {$LTLoc = 1}
 ## Max lines in log file. If log file not used, you can ignore this`
-$LogMaxLines = 10000
+If ($LogMaxLines -eq $null) {$LogMaxLines = 10000}
+## By default log to my logs for this project. Feel free to leave this in place, or remove. 
+$LogglyCustomerToken = "529d074f-ed30-49f8-90c3-0ade30dbae9e"
+
 
 ### You should not need to modify below here ###
 
@@ -64,7 +72,6 @@ $LogUUID = (get-wmiobject Win32_ComputerSystemProduct).UUID + "__" + ((gwmi win3
 $PsVer = $PSVersionTable.PSVersion.ToString() ;
 $ComputerDomain = (Get-WmiObject Win32_ComputerSystem).Domain ;
 $OsVersion = ((Get-WmiObject -Class Win32_OperatingSystem -EA 0 -WA 0 ).Version).ToString() ;
-$LogglyCustomerToken = "529d074f-ed30-49f8-90c3-0ade30dbae9e"
 $LogglyLogURI = "https://logs-01.loggly.com/bulk/" + $LogglyCustomerToken + "/tag/powershell"
 
 function LogToLoggly {
@@ -190,10 +197,10 @@ Function Reinstall {
 			$LTLoc = (get-LTServiceInfo).LocationID
 		}
 
-		outlog "Calling Reinstall-LTService -Server $LTSrv -LocationID $LTLoc" "DEBUG"
+		outlog "Calling Reinstall-LTService -Server $LTSrv -LocationID $LTLoc -InstallerToken $InstallerToken" "DEBUG"
 		## Call the module to do the (re)install
 		#Reinstall-LTService -Server $LTSrv -LocationID $LTLoc
-		$InstallResult = Reinstall-LTService -Server $LTSrv -LocationID $LTLoc >> $LogFile
+		$InstallResult = Reinstall-LTService -Server $LTSrv -LocationID $LTLoc -InstallerToken $InstallerToken >> $LogFile
 		outlog "Result of Reinstall-LTService was $InstallResult" "DEBUG"
 
 		## Check TerminalServerMode using WMI.  1 = Application Server mode (Terminal Server), 0 = Remote Administration mode (normal RDP)
@@ -212,6 +219,9 @@ Function Reinstall {
 ## Main Flow
 If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) { 
 	outlog "You need to specify the LT server to use by setting `$LTSrv variable before calling this script" "CRITICAL";	
+}
+ElseIf ($InstallerToken -eq "" -or $InstallerToken -eq $null) {
+    outlog "You need to specify the Installer Token to use by setting `$InstallerToken variable before calling this script" "CRITICAL";	
 } else {
 
     outlog "Checking health of LabTech agent" "DEBUG";
@@ -339,4 +349,3 @@ If ($LTSrv -eq "labtech.mymspname.here" -or $LTSrv -eq "" -or $LTSrv -eq $null) 
 		}
 		outlog "### Labtech Agent checks completed OK. Enjoy the rest of your uptime!"
     }
-}
