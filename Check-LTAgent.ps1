@@ -24,6 +24,7 @@
 ## 2019-04-25 Deal with multiple addresses in serverAddress set by LT templates
 ## 2020-10-16 Add InstallerToken parameter as now required to get the MSI
 ## 2020-10-16 Tidied up and changed LogFile and LogMaxLines overrides to default instead
+## 2021-12-09 Fix missing last bracket causing parse failure of whole script. Doh!
 
 ## If you want to set default / override values, do that here
 # Set default log file location
@@ -349,3 +350,4 @@ ElseIf ($InstallerToken -eq "" -or $InstallerToken -eq $null) {
 		}
 		outlog "### Labtech Agent checks completed OK. Enjoy the rest of your uptime!"
     }
+}
